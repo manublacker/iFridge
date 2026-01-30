@@ -9,110 +9,89 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     
     <style>
-        :root { --blue: #007AFF; --red: #FF3B30; --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; }
-        @media (prefers-color-scheme: dark) {
-            :root { --bg: #000000; --card: #1C1C1E; --text: #FFFFFF; }
-        }
+        :root { --blue: #007AFF; --cyan: #5AC8FA; --red: #FF3B30; --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #000000; --card: #1C1C1E; --text: #FFFFFF; } }
 
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; user-select: none; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; user-select: none; }
+        header { background: var(--card); padding: 20px; border-bottom: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; }
         
-        header { 
-            background: var(--card); padding: 20px; border-bottom: 0.5px solid rgba(0,0,0,0.1); 
-            display: flex; justify-content: space-between; align-items: center; 
-            position: sticky; top: 0; z-index: 10;
-        }
+        /* Contenedor de Swipe */
+        .swipe-container { position: relative; margin: 12px 16px; overflow: hidden; border-radius: 12px; background: var(--red); }
+        .swipe-content { background: var(--card); padding: 18px; display: flex; align-items: center; position: relative; z-index: 10; transition: transform 0.3s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .swipe-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; width: 160px; z-index: 5; }
+        .action-btn { width: 80px; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; }
+        .del-btn { background: var(--red); }
+        .ren-btn { background: var(--cyan); }
+        .swiped { transform: translateX(-160px); }
 
-        h1 { margin: 0; font-size: 20px; font-weight: bold; }
+        /* Tabla y Productos */
+        table { width: 100%; border-collapse: collapse; background: var(--card); }
+        th { text-align: left; padding: 12px 16px; font-size: 11px; color: #8E8E93; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+        td { padding: 16px; border-bottom: 0.5px solid rgba(0,0,0,0.1); font-size: 16px; }
+        .qty-input { width: 40px; border: none; background: #8e8e9322; border-radius: 5px; text-align: center; color: var(--text); font-weight: bold; padding: 4px; }
+        
         .view { display: none; }
         .view.active { display: block; }
-
-        /* Estilo Lista de Espacios */
-        .space-card { 
-            background: var(--card); padding: 18px; margin: 12px 16px; border-radius: 12px;
-            display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: opacity 0.2s;
-        }
-        .space-card:active { opacity: 0.7; }
-
-        /* Estilo Tabla de Productos */
-        .table-container { background: var(--card); margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px 16px; font-size: 11px; color: #8E8E93; text-transform: uppercase; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
-        td { padding: 16px; border-bottom: 0.5px solid rgba(0,0,0,0.1); font-size: 16px; }
-        
-        .qty-col { width: 50px; text-align: center; font-weight: 600; }
-        .date-col { width: 90px; font-size: 13px; color: #8E8E93; }
-        .action-col { width: 40px; text-align: right; }
-        
-        .minus-btn { 
-            background: var(--blue); color: white; border: none; 
-            width: 28px; height: 28px; border-radius: 14px; 
-            font-size: 18px; font-weight: bold; line-height: 1;
-        }
-
-        .btn-blue { color: var(--blue); background: none; border: none; font-size: 17px; font-weight: 500; cursor: pointer; }
-        .btn-add { font-size: 26px; line-height: 1; }
+        .btn-blue { color: var(--blue); background: none; border: none; font-size: 17px; font-weight: 500; }
     </style>
 </head>
 <body>
 
     <div id="home-view" class="view active">
-        <header>
-            <h1>Kitchen</h1>
-            <button class="btn-blue btn-add" onclick="addSpace()">⊕</button>
-        </header>
+        <header><h1>Kitchen</h1><button class="btn-blue" onclick="addSpace()" style="font-size:26px">⊕</button></header>
         <div id="space-list"></div>
     </div>
 
     <div id="detail-view" class="view">
-        <header>
-            <button class="btn-blue" onclick="showHome()">‹ Back</button>
-            <h1 id="detail-title">Inventory</h1>
-            <button class="btn-blue btn-add" onclick="addProduct()">⊕</button>
-        </header>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th class="qty-col">Qty</th>
-                        <th class="date-col">Through</th>
-                        <th class="action-col"></th>
-                    </tr>
-                </thead>
-                <tbody id="product-list"></tbody>
-            </table>
-        </div>
+        <header><button class="btn-blue" onclick="showHome()">‹ Back</button><h1 id="detail-title"></h1><button class="btn-blue" onclick="addProduct()" style="font-size:26px">⊕</button></header>
+        <table>
+            <thead><tr><th>Product</th><th style="width:60px">Qty</th><th>Through</th><th></th></tr></thead>
+            <tbody id="product-list"></tbody>
+        </table>
     </div>
 
     <script>
-        let data = JSON.parse(localStorage.getItem('ifridge_pro_data')) || [
+        let data = JSON.parse(localStorage.getItem('ifridge_v3')) || [
             { id: 1, name: "Fridge", items: [] },
-            { id: 2, name: "Freezer 1", items: [] },
-            { id: 3, name: "Shopping List", items: [] }
+            { id: 2, name: "Shopping List", items: [] }
         ];
         let currentId = null;
 
-        function save() { localStorage.setItem('ifridge_pro_data', JSON.stringify(data)); }
+        function save() { localStorage.setItem('ifridge_v3', JSON.stringify(data)); }
 
         function renderHome() {
             const list = document.getElementById('space-list');
             list.innerHTML = '';
             data.forEach(s => {
-                list.innerHTML += `
-                    <div class="space-card" onclick="showDetail(${s.id})">
-                        <span style="font-size: 20px; margin-right: 15px;">${s.name === 'Shopping List' ? '🛒' : '🧊'}</span>
+                const container = document.createElement('div');
+                container.className = 'swipe-container';
+                container.innerHTML = `
+                    <div class="swipe-actions">
+                        <div class="action-btn ren-btn" onclick="renameSpace(${s.id})">Rename</div>
+                        <div class="action-btn del-btn" onclick="deleteSpace(${s.id})">Delete</div>
+                    </div>
+                    <div class="swipe-content" id="s-${s.id}" onclick="showDetail(${s.id})">
+                        <span style="margin-right:15px">${s.name==='Shopping List'?'🛒':'🧊'}</span>
                         <span style="flex-grow:1; font-weight:500;">${s.name}</span>
-                        <span style="color:#8E8E93; font-size: 14px;">${s.items.length} ›</span>
+                        <span style="color:#8E8E93">${s.items.length} ›</span>
                     </div>`;
+                
+                let startX;
+                const content = container.querySelector('.swipe-content');
+                content.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+                content.addEventListener('touchend', e => {
+                    let diff = startX - e.changedTouches[0].clientX;
+                    if (diff > 60) content.classList.add('swiped');
+                    else if (diff < -60) content.classList.remove('swiped');
+                });
+                list.appendChild(container);
             });
             save();
         }
 
         function showDetail(id) {
             currentId = id;
-            const space = data.find(s => s.id === id);
-            document.getElementById('detail-title').innerText = space.name;
+            document.getElementById('detail-title').innerText = data.find(s=>s.id===id).name;
             document.getElementById('home-view').classList.remove('active');
             document.getElementById('detail-view').classList.add('active');
             renderProducts();
@@ -132,45 +111,43 @@
                 list.innerHTML += `
                     <tr>
                         <td>${item.name}</td>
-                        <td class="qty-col">${item.qty}</td>
-                        <td class="date-col">${item.date}</td>
-                        <td class="action-col">
-                            <button class="minus-btn" onclick="minusItem(${index})">−</button>
-                        </td>
+                        <td><input type="number" class="qty-input" value="${item.qty}" onchange="updateQty(${index}, this.value)"></td>
+                        <td style="font-size:12px; color:#8E8E93">${item.date}</td>
+                        <td style="text-align:right"><button onclick="minusItem(${index})" style="background:var(--blue); color:white; border:none; border-radius:50%; width:24px; height:24px;">-</button></td>
                     </tr>`;
             });
             save();
         }
 
-        function addProduct() {
-            const name = prompt("Product Name:");
-            const qty = parseInt(prompt("Quantity:", "1"));
-            const date = prompt("Expiry Date (DD/MM):", "30/01");
-            if (name && qty) {
-                data.find(s => s.id === currentId).items.push({ name, qty, date });
-                renderProducts();
-            }
+        function updateQty(index, val) {
+            const space = data.find(s => s.id === currentId);
+            space.items[index].qty = parseInt(val) || 0;
+            if (space.items[index].qty <= 0) space.items.splice(index, 1);
+            renderProducts();
         }
 
         function minusItem(index) {
             const space = data.find(s => s.id === currentId);
-            if (space.items[index].qty > 0) {
-                space.items[index].qty--;
-                if (space.items[index].qty <= 2) {
-                    const add = confirm(`Warning: Only ${space.items[index].qty} left of ${space.items[index].name}. Add to Shopping List?`);
-                    if (add) {
-                        const sl = data.find(s => s.name === "Shopping List");
-                        sl.items.push({ name: space.items[index].name, qty: 1, date: "Pending" });
-                    }
+            space.items[index].qty--;
+            if (space.items[index].qty <= 2 && space.items[index].qty > 0) {
+                if(confirm(`Low stock: ${space.items[index].name}. Add to Shopping List?`)) {
+                    data.find(s=>s.name==="Shopping List").items.push({name: space.items[index].name, qty: 1, date: "Pending"});
                 }
-                renderProducts();
             }
+            if (space.items[index].qty <= 0) space.items.splice(index, 1);
+            renderProducts();
         }
 
-        function addSpace() {
-            const n = prompt("Name of new space (e.g. Pantry):");
-            if(n) { data.push({id: Date.now(), name: n, items: []}); renderHome(); }
+        function addProduct() {
+            const n = prompt("Product Name:");
+            const q = parseInt(prompt("Quantity:", "1"));
+            const d = prompt("Date (DD/MM):", "30/01");
+            if (n && q) { data.find(s => s.id === currentId).items.push({ name: n, qty: q, date: d }); renderProducts(); }
         }
+
+        function deleteSpace(id) { if(confirm("Delete space?")) { data = data.filter(s=>s.id!==id); renderHome(); } }
+        function renameSpace(id) { const n = prompt("New name:"); if(n) { data.find(s=>s.id===id).name = n; renderHome(); } }
+        function addSpace() { const n = prompt("Space Name:"); if(n) { data.push({id: Date.now(), name: n, items: []}); renderHome(); } }
 
         renderHome();
     </script>
