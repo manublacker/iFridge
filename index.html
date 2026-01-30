@@ -6,137 +6,173 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>iFridge</title>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     
-    <link rel="apple-touch-icon" href="icon-v2.png">
-
     <style>
-        :root { --blue: #007AFF; --light-blue: #5AC8FA; --red: #FF3B30; --bg: #F2F2F7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); margin: 0; padding: 0; user-select: none; }
+        :root { --blue: #007AFF; --red: #FF3B30; --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #000000; --card: #1C1C1E; --text: #FFFFFF; }
+        }
+
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; user-select: none; }
         
         header { 
-            background: white; padding: 20px; border-bottom: 1px solid #D1D1D6; 
+            background: var(--card); padding: 20px; border-bottom: 0.5px solid rgba(0,0,0,0.1); 
             display: flex; justify-content: space-between; align-items: center; 
-            position: sticky; top: 0; z-index: 10; 
+            position: sticky; top: 0; z-index: 10;
         }
+
+        h1 { margin: 0; font-size: 20px; font-weight: bold; }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Estilo Lista de Espacios */
+        .space-card { 
+            background: var(--card); padding: 18px; margin: 12px 16px; border-radius: 12px;
+            display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: opacity 0.2s;
+        }
+        .space-card:active { opacity: 0.7; }
+
+        /* Estilo Tabla de Productos */
+        .table-container { background: var(--card); margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px 16px; font-size: 11px; color: #8E8E93; text-transform: uppercase; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+        td { padding: 16px; border-bottom: 0.5px solid rgba(0,0,0,0.1); font-size: 16px; }
         
-        h1 { margin: 0; font-size: 24px; font-weight: bold; color: black; }
-        .add-btn { color: var(--blue); font-size: 28px; cursor: pointer; border: none; background: none; }
-
-        .list-container { padding: 15px; }
-
-        /* Estilo de Tarjetas con Swipe */
-        .card-wrapper { position: relative; margin-bottom: 12px; overflow: hidden; border-radius: 12px; background: var(--red); }
+        .qty-col { width: 50px; text-align: center; font-weight: 600; }
+        .date-col { width: 90px; font-size: 13px; color: #8E8E93; }
+        .action-col { width: 40px; text-align: right; }
         
-        .card { 
-            background: white; padding: 18px; display: flex; align-items: center; 
-            position: relative; z-index: 2; transition: transform 0.3s ease; 
-        }
-        
-        .icon { font-size: 22px; margin-right: 15px; color: var(--blue); }
-        .space-info { flex-grow: 1; font-weight: 600; font-size: 17px; }
-        .count-badge { 
-            background: var(--blue); color: white; padding: 4px 12px; 
-            border-radius: 15px; font-size: 13px; font-weight: bold; 
+        .minus-btn { 
+            background: var(--blue); color: white; border: none; 
+            width: 28px; height: 28px; border-radius: 14px; 
+            font-size: 18px; font-weight: bold; line-height: 1;
         }
 
-        /* Botones ocultos del Swipe */
-        .swipe-menu { 
-            position: absolute; right: 0; top: 0; height: 100%; 
-            display: flex; width: 160px; z-index: 1; 
-        }
-        .action-btn { 
-            width: 80px; height: 100%; display: flex; align-items: center; 
-            justify-content: center; color: white; font-weight: bold; font-size: 13px; 
-        }
-        .del-btn { background: var(--red); }
-        .ren-btn { background: var(--light-blue); }
-
-        .swiped { transform: translateX(-160px); }
+        .btn-blue { color: var(--blue); background: none; border: none; font-size: 17px; font-weight: 500; cursor: pointer; }
+        .btn-add { font-size: 26px; line-height: 1; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>iFridge</h1>
-        <button class="add-btn" onclick="addSpace()">⊕</button>
-    </header>
+    <div id="home-view" class="view active">
+        <header>
+            <h1>Kitchen</h1>
+            <button class="btn-blue btn-add" onclick="addSpace()">⊕</button>
+        </header>
+        <div id="space-list"></div>
+    </div>
 
-    <div id="main-list" class="list-container">
+    <div id="detail-view" class="view">
+        <header>
+            <button class="btn-blue" onclick="showHome()">‹ Back</button>
+            <h1 id="detail-title">Inventory</h1>
+            <button class="btn-blue btn-add" onclick="addProduct()">⊕</button>
+        </header>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="qty-col">Qty</th>
+                        <th class="date-col">Through</th>
+                        <th class="action-col"></th>
+                    </tr>
+                </thead>
+                <tbody id="product-list"></tbody>
+            </table>
         </div>
+    </div>
 
     <script>
-        // Cargar datos del almacenamiento local del iPhone
-        let spaces = JSON.parse(localStorage.getItem('ifridge_data')) || [
+        let data = JSON.parse(localStorage.getItem('ifridge_pro_data')) || [
             { id: 1, name: "Fridge", items: [] },
             { id: 2, name: "Freezer 1", items: [] },
             { id: 3, name: "Shopping List", items: [] }
         ];
+        let currentId = null;
 
-        function render() {
-            const container = document.getElementById('main-list');
-            container.innerHTML = '';
-            
-            spaces.forEach(space => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'card-wrapper';
-                
-                wrapper.innerHTML = `
-                    <div class="swipe-menu">
-                        <div class="action-btn ren-btn" onclick="renameSpace(${space.id})">Rename</div>
-                        <div class="action-btn del-btn" onclick="deleteSpace(${space.id})">Delete</div>
-                    </div>
-                    <div class="card" id="card-${space.id}" onclick="openSpace(${space.id})">
-                        <div class="icon">${space.name === 'Shopping List' ? '🛒' : '🧊'}</div>
-                        <div class="space-info">${space.name}</div>
-                        <div class="count-badge">${space.items.length}</div>
-                    </div>
-                `;
+        function save() { localStorage.setItem('ifridge_pro_data', JSON.stringify(data)); }
 
-                // Lógica de Swipe para iPhone
-                let startX;
-                const card = wrapper.querySelector('.card');
-                
-                card.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-                card.addEventListener('touchend', e => {
-                    let diff = startX - e.changedTouches[0].clientX;
-                    if (diff > 60) card.classList.add('swiped');
-                    else if (diff < -60) card.classList.remove('swiped');
-                });
-
-                container.appendChild(wrapper);
+        function renderHome() {
+            const list = document.getElementById('space-list');
+            list.innerHTML = '';
+            data.forEach(s => {
+                list.innerHTML += `
+                    <div class="space-card" onclick="showDetail(${s.id})">
+                        <span style="font-size: 20px; margin-right: 15px;">${s.name === 'Shopping List' ? '🛒' : '🧊'}</span>
+                        <span style="flex-grow:1; font-weight:500;">${s.name}</span>
+                        <span style="color:#8E8E93; font-size: 14px;">${s.items.length} ›</span>
+                    </div>`;
             });
-            localStorage.setItem('ifridge_data', JSON.stringify(spaces));
+            save();
+        }
+
+        function showDetail(id) {
+            currentId = id;
+            const space = data.find(s => s.id === id);
+            document.getElementById('detail-title').innerText = space.name;
+            document.getElementById('home-view').classList.remove('active');
+            document.getElementById('detail-view').classList.add('active');
+            renderProducts();
+        }
+
+        function showHome() {
+            document.getElementById('detail-view').classList.remove('active');
+            document.getElementById('home-view').classList.add('active');
+            renderHome();
+        }
+
+        function renderProducts() {
+            const list = document.getElementById('product-list');
+            const space = data.find(s => s.id === currentId);
+            list.innerHTML = '';
+            space.items.forEach((item, index) => {
+                list.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td class="qty-col">${item.qty}</td>
+                        <td class="date-col">${item.date}</td>
+                        <td class="action-col">
+                            <button class="minus-btn" onclick="minusItem(${index})">−</button>
+                        </td>
+                    </tr>`;
+            });
+            save();
+        }
+
+        function addProduct() {
+            const name = prompt("Product Name:");
+            const qty = parseInt(prompt("Quantity:", "1"));
+            const date = prompt("Expiry Date (DD/MM):", "30/01");
+            if (name && qty) {
+                data.find(s => s.id === currentId).items.push({ name, qty, date });
+                renderProducts();
+            }
+        }
+
+        function minusItem(index) {
+            const space = data.find(s => s.id === currentId);
+            if (space.items[index].qty > 0) {
+                space.items[index].qty--;
+                if (space.items[index].qty <= 2) {
+                    const add = confirm(`Warning: Only ${space.items[index].qty} left of ${space.items[index].name}. Add to Shopping List?`);
+                    if (add) {
+                        const sl = data.find(s => s.name === "Shopping List");
+                        sl.items.push({ name: space.items[index].name, qty: 1, date: "Pending" });
+                    }
+                }
+                renderProducts();
+            }
         }
 
         function addSpace() {
-            const name = prompt("New Space Name:");
-            if (name) {
-                spaces.push({ id: Date.now(), name: name, items: [] });
-                render();
-            }
+            const n = prompt("Name of new space (e.g. Pantry):");
+            if(n) { data.push({id: Date.now(), name: n, items: []}); renderHome(); }
         }
 
-        function deleteSpace(id) {
-            if(confirm("Delete this space?")) {
-                spaces = spaces.filter(s => s.id !== id);
-                render();
-            }
-        }
-
-        function renameSpace(id) {
-            const newName = prompt("New name:");
-            if (newName) {
-                spaces.find(s => s.id === id).name = newName;
-                render();
-            }
-        }
-
-        function openSpace(id) {
-            // Aquí podrías agregar la lógica para ver los productos dentro
-            alert("Viewing items for: " + spaces.find(s => s.id === id).name);
-        }
-
-        render();
+        renderHome();
     </script>
 </body>
 </html>
