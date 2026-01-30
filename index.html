@@ -5,17 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>iFridge</title>
+    <title>iFridge Pro</title>
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     
     <style>
-        :root { --blue: #007AFF; --cyan: #5AC8FA; --red: #FF3B30; --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; }
+        :root { --blue: #007AFF; --cyan: #5AC8FA; --red: #FF3B30; --green: #34C759; --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; }
         @media (prefers-color-scheme: dark) { :root { --bg: #000000; --card: #1C1C1E; --text: #FFFFFF; } }
 
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; user-select: none; }
         header { background: var(--card); padding: 20px; border-bottom: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; }
         
-        /* Contenedor de Swipe */
         .swipe-container { position: relative; margin: 12px 16px; overflow: hidden; border-radius: 12px; background: var(--red); }
         .swipe-content { background: var(--card); padding: 18px; display: flex; align-items: center; position: relative; z-index: 10; transition: transform 0.3s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .swipe-actions { position: absolute; right: 0; top: 0; height: 100%; display: flex; width: 160px; z-index: 5; }
@@ -24,7 +23,6 @@
         .ren-btn { background: var(--cyan); }
         .swiped { transform: translateX(-160px); }
 
-        /* Tabla y Productos */
         table { width: 100%; border-collapse: collapse; background: var(--card); }
         th { text-align: left; padding: 12px 16px; font-size: 11px; color: #8E8E93; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
         td { padding: 16px; border-bottom: 0.5px solid rgba(0,0,0,0.1); font-size: 16px; }
@@ -33,6 +31,10 @@
         .view { display: none; }
         .view.active { display: block; }
         .btn-blue { color: var(--blue); background: none; border: none; font-size: 17px; font-weight: 500; }
+        
+        .circle-btn { color: white; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .btn-minus { background: var(--blue); }
+        .btn-check { background: var(--blue); font-size: 14px; }
     </style>
 </head>
 <body>
@@ -45,19 +47,19 @@
     <div id="detail-view" class="view">
         <header><button class="btn-blue" onclick="showHome()">‹ Back</button><h1 id="detail-title"></h1><button class="btn-blue" onclick="addProduct()" style="font-size:26px">⊕</button></header>
         <table>
-            <thead><tr><th>Product</th><th style="width:60px">Qty</th><th>Through</th><th></th></tr></thead>
+            <thead><tr><th>Product</th><th style="width:60px">Qty</th><th>Through</th><th style="width:40px"></th></tr></thead>
             <tbody id="product-list"></tbody>
         </table>
     </div>
 
     <script>
-        let data = JSON.parse(localStorage.getItem('ifridge_v3')) || [
+        let data = JSON.parse(localStorage.getItem('ifridge_v4')) || [
             { id: 1, name: "Fridge", items: [] },
             { id: 2, name: "Shopping List", items: [] }
         ];
         let currentId = null;
 
-        function save() { localStorage.setItem('ifridge_v3', JSON.stringify(data)); }
+        function save() { localStorage.setItem('ifridge_v4', JSON.stringify(data)); }
 
         function renderHome() {
             const list = document.getElementById('space-list');
@@ -91,7 +93,8 @@
 
         function showDetail(id) {
             currentId = id;
-            document.getElementById('detail-title').innerText = data.find(s=>s.id===id).name;
+            const space = data.find(s=>s.id===id);
+            document.getElementById('detail-title').innerText = space.name;
             document.getElementById('home-view').classList.remove('active');
             document.getElementById('detail-view').classList.add('active');
             renderProducts();
@@ -106,14 +109,20 @@
         function renderProducts() {
             const list = document.getElementById('product-list');
             const space = data.find(s => s.id === currentId);
+            const isShoppingList = space.name === "Shopping List";
             list.innerHTML = '';
+            
             space.items.forEach((item, index) => {
+                const actionButton = isShoppingList 
+                    ? `<button class="circle-btn btn-check" onclick="removeItem(${index})">✓</button>`
+                    : `<button class="circle-btn btn-minus" onclick="minusItem(${index})">-</button>`;
+
                 list.innerHTML += `
                     <tr>
                         <td>${item.name}</td>
                         <td><input type="number" class="qty-input" value="${item.qty}" onchange="updateQty(${index}, this.value)"></td>
                         <td style="font-size:12px; color:#8E8E93">${item.date}</td>
-                        <td style="text-align:right"><button onclick="minusItem(${index})" style="background:var(--blue); color:white; border:none; border-radius:50%; width:24px; height:24px;">-</button></td>
+                        <td style="text-align:right">${actionButton}</td>
                     </tr>`;
             });
             save();
@@ -126,14 +135,23 @@
             renderProducts();
         }
 
+        function removeItem(index) {
+            const space = data.find(s => s.id === currentId);
+            space.items.splice(index, 1);
+            renderProducts();
+        }
+
         function minusItem(index) {
             const space = data.find(s => s.id === currentId);
             space.items[index].qty--;
+            
             if (space.items[index].qty <= 2 && space.items[index].qty > 0) {
                 if(confirm(`Low stock: ${space.items[index].name}. Add to Shopping List?`)) {
-                    data.find(s=>s.name==="Shopping List").items.push({name: space.items[index].name, qty: 1, date: "Pending"});
+                    const sl = data.find(s=>s.name==="Shopping List");
+                    if (sl) sl.items.push({name: space.items[index].name, qty: 1, date: "Pending"});
                 }
             }
+            
             if (space.items[index].qty <= 0) space.items.splice(index, 1);
             renderProducts();
         }
