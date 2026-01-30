@@ -3,31 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>iFridge</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
     <style>
         :root { --blue: #007AFF; --light-blue: #5AC8FA; --red: #FF3B30; --bg: #F2F2F7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 0; user-select: none; }
-        header { background: white; padding: 20px; border-bottom: 1px solid #D1D1D6; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
-        h1 { margin: 0; font-size: 24px; color: black; }
-        .add-btn { color: var(--blue); font-size: 30px; cursor: pointer; border: none; background: none; }
-        .list-container { padding: 15px; }
-        .card { background: white; border-radius: 12px; margin-bottom: 10px; padding: 15px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: relative; overflow: hidden; transition: transform 0.2s; }
-        .icon { font-size: 20px; margin-right: 15px; color: var(--blue); }
-        .space-info { flex-grow: 1; }
-        .count-badge { background: var(--blue); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); margin: 0; padding: 0; user-select: none; }
         
-        /* Estilo para simular el Swipe */
-        .swipe-actions { position: absolute; right: -160px; top: 0; height: 100%; display: flex; transition: right 0.3s; }
-        .action-btn { width: 80px; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; cursor: pointer; }
-        .delete-btn { background: var(--red); }
-        .rename-btn { background: var(--light-blue); }
-        .card.swiped { transform: translateX(-160px); }
+        header { 
+            background: white; padding: 20px; border-bottom: 1px solid #D1D1D6; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; z-index: 10; 
+        }
+        
+        h1 { margin: 0; font-size: 24px; font-weight: bold; color: black; }
+        .add-btn { color: var(--blue); font-size: 28px; cursor: pointer; border: none; background: none; }
+
+        .list-container { padding: 15px; }
+
+        /* Estilo de Tarjetas con Swipe */
+        .card-wrapper { position: relative; margin-bottom: 12px; overflow: hidden; border-radius: 12px; background: var(--red); }
+        
+        .card { 
+            background: white; padding: 18px; display: flex; align-items: center; 
+            position: relative; z-index: 2; transition: transform 0.3s ease; 
+        }
+        
+        .icon { font-size: 22px; margin-right: 15px; color: var(--blue); }
+        .space-info { flex-grow: 1; font-weight: 600; font-size: 17px; }
+        .count-badge { 
+            background: var(--blue); color: white; padding: 4px 12px; 
+            border-radius: 15px; font-size: 13px; font-weight: bold; 
+        }
+
+        /* Botones ocultos del Swipe */
+        .swipe-menu { 
+            position: absolute; right: 0; top: 0; height: 100%; 
+            display: flex; width: 160px; z-index: 1; 
+        }
+        .action-btn { 
+            width: 80px; height: 100%; display: flex; align-items: center; 
+            justify-content: center; color: white; font-weight: bold; font-size: 13px; 
+        }
+        .del-btn { background: var(--red); }
+        .ren-btn { background: var(--light-blue); }
+
+        .swiped { transform: translateX(-160px); }
     </style>
 </head>
 <body>
+
     <header>
-        <h1>Kitchen Inventory</h1>
+        <h1>iFridge</h1>
         <button class="add-btn" onclick="addSpace()">⊕</button>
     </header>
 
@@ -35,63 +65,78 @@
         </div>
 
     <script>
-        let spaces = JSON.parse(localStorage.getItem('kitchen_data')) || [
+        // Cargar datos del almacenamiento local del iPhone
+        let spaces = JSON.parse(localStorage.getItem('ifridge_data')) || [
             { id: 1, name: "Fridge", items: [] },
             { id: 2, name: "Freezer 1", items: [] },
             { id: 3, name: "Shopping List", items: [] }
         ];
 
-        function renderSpaces() {
+        function render() {
             const container = document.getElementById('main-list');
             container.innerHTML = '';
+            
             spaces.forEach(space => {
-                const div = document.createElement('div');
-                div.className = 'card';
-                div.innerHTML = `
-                    <div class="icon">${space.name === 'Shopping List' ? '🛒' : '🧊'}</div>
-                    <div class="space-info"><strong>${space.name}</strong></div>
-                    <div class="count-badge">${space.items.length}</div>
-                    <div class="swipe-actions">
-                        <div class="action-btn rename-btn" onclick="renameSpace(${space.id})">Rename</div>
-                        <div class="action-btn delete-btn" onclick="deleteSpace(${space.id})">Delete</div>
+                const wrapper = document.createElement('div');
+                wrapper.className = 'card-wrapper';
+                
+                wrapper.innerHTML = `
+                    <div class="swipe-menu">
+                        <div class="action-btn ren-btn" onclick="renameSpace(${space.id})">Rename</div>
+                        <div class="action-btn del-btn" onclick="deleteSpace(${space.id})">Delete</div>
+                    </div>
+                    <div class="card" id="card-${space.id}" onclick="openSpace(${space.id})">
+                        <div class="icon">${space.name === 'Shopping List' ? '🛒' : '🧊'}</div>
+                        <div class="space-info">${space.name}</div>
+                        <div class="count-badge">${space.items.length}</div>
                     </div>
                 `;
-                // Lógica de swipe simple para móvil
+
+                // Lógica de Swipe para iPhone
                 let startX;
-                div.ontouchstart = e => startX = e.touches[0].clientX;
-                div.ontouchend = e => {
+                const card = wrapper.querySelector('.card');
+                
+                card.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+                card.addEventListener('touchend', e => {
                     let diff = startX - e.changedTouches[0].clientX;
-                    if (diff > 50) div.classList.add('swiped');
-                    else if (diff < -50) div.classList.remove('swiped');
-                };
-                container.appendChild(div);
+                    if (diff > 60) card.classList.add('swiped');
+                    else if (diff < -60) card.classList.remove('swiped');
+                });
+
+                container.appendChild(wrapper);
             });
-            localStorage.setItem('kitchen_data', JSON.stringify(spaces));
+            localStorage.setItem('ifridge_data', JSON.stringify(spaces));
         }
 
         function addSpace() {
             const name = prompt("New Space Name:");
             if (name) {
                 spaces.push({ id: Date.now(), name: name, items: [] });
-                renderSpaces();
+                render();
             }
         }
 
         function deleteSpace(id) {
-            spaces = spaces.filter(s => s.id !== id);
-            renderSpaces();
-        }
-
-        function renameSpace(id) {
-            const newName = prompt("Enter new name:");
-            if (newName) {
-                const space = spaces.find(s => s.id === id);
-                space.name = newName;
-                renderSpaces();
+            if(confirm("Delete this space?")) {
+                spaces = spaces.filter(s => s.id !== id);
+                render();
             }
         }
 
-        renderSpaces();
+        function renameSpace(id) {
+            const newName = prompt("New name:");
+            if (newName) {
+                spaces.find(s => s.id === id).name = newName;
+                render();
+            }
+        }
+
+        function openSpace(id) {
+            // Aquí podrías agregar la lógica para ver los productos dentro
+            alert("Viewing items for: " + spaces.find(s => s.id === id).name);
+        }
+
+        render();
     </script>
 </body>
 </html>
