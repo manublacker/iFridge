@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>iFridge Ultimate</title>
-    <link rel="apple-touch-icon" href="icon-v2.png">
+    <title>iFridge V2</title>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
     <style>
         :root { 
             --blue: #007AFF; --cyan: #5AC8FA; --red: #FF3B30; 
@@ -20,7 +22,7 @@
 
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* --- HEADERS --- */
+        /* HEADERS */
         header { 
             background: var(--card); padding: 15px 20px; border-bottom: 0.5px solid var(--border); 
             display: flex; justify-content: space-between; align-items: center; 
@@ -30,13 +32,13 @@
         .btn-icon { font-size: 28px; background: none; border: none; color: var(--blue); cursor: pointer; line-height: 1; }
         .btn-back { font-size: 17px; color: var(--blue); background: none; border: none; font-weight: 500; display: flex; align-items: center; }
 
-        /* --- VIEWS --- */
+        /* VIEWS */
         .view { display: none; padding-bottom: 60px; }
         .view.active { display: block; animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- SWIPE LIST (HOME) --- */
-        .swipe-container { position: relative; margin: 12px 16px; overflow: hidden; border-radius: 14px; background: var(--red); }
+        /* SWIPE LIST (HOME) */
+        .swipe-container { position: relative; margin: 12px 16px; overflow: hidden; border-radius: 14px; background: var(--red); touch-action: pan-y; }
         .swipe-content { 
             background: var(--card); padding: 18px; display: flex; align-items: center; 
             position: relative; z-index: 10; transition: transform 0.2s ease-out; 
@@ -47,44 +49,50 @@
         .del-btn { background: var(--red); }
         .ren-btn { background: var(--cyan); }
         .swiped { transform: translateX(-160px); }
+        
+        /* Drag Handle */
+        .drag-handle { padding: 0 0 0 15px; color: #C7C7CC; font-size: 20px; cursor: grab; }
 
-        /* --- VISUAL FRIDGE LAYOUT --- */
-        .fridge-container { display: flex; height: calc(100vh - 140px); gap: 12px; padding: 16px; box-sizing: border-box; }
+        /* FRIDGE VISUAL LAYOUT */
+        .fridge-container { display: flex; height: calc(100vh - 140px); gap: 10px; padding: 14px; box-sizing: border-box; }
         
         /* Cuerpo (Izq) */
-        .fridge-body { flex: 6; display: flex; flex-direction: column; gap: 12px; }
+        .fridge-body { flex: 55; display: flex; flex-direction: column; gap: 10px; }
         .main-shelf { 
             flex: 3; background: rgba(0, 122, 255, 0.1); border: 2px solid var(--blue); 
             border-radius: 12px; display: flex; align-items: center; justify-content: center; 
             flex-direction: column; color: var(--blue); font-weight: 600; cursor: pointer; position: relative;
         }
-        .crisper-row { flex: 1; display: flex; gap: 10px; }
+        .crisper-row { flex: 1; display: flex; gap: 8px; }
         .crisper { 
             flex: 1; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            flex-direction: column; font-weight: 600; font-size: 14px; cursor: pointer; position: relative; 
+            flex-direction: column; font-weight: 600; font-size: 13px; cursor: pointer; position: relative; 
         }
         .fruit-zone { background: rgba(52, 199, 89, 0.15); border: 2px solid var(--green); color: var(--green); }
         .veg-zone { background: rgba(255, 149, 0, 0.15); border: 2px solid var(--orange); color: var(--orange); }
 
         /* Puerta (Der) */
-        .fridge-door { flex: 4; display: flex; flex-direction: column; gap: 8px; padding-left: 8px; border-left: 3px dashed var(--border); }
+        .fridge-door { flex: 45; display: flex; flex-direction: column; gap: 6px; padding-left: 8px; border-left: 3px dashed var(--border); }
         .door-shelf { 
             flex: 1; background: rgba(175, 82, 222, 0.1); border: 2px solid #AF52DE; 
             border-radius: 10px; display: flex; align-items: center; justify-content: center; 
-            flex-direction: column; text-align: center; font-size: 13px; font-weight: 600; color: #AF52DE; cursor: pointer; position: relative; 
+            flex-direction: column; text-align: center; font-size: 11px; font-weight: 600; color: #AF52DE; cursor: pointer; position: relative; 
         }
 
-        .badge { position: absolute; top: 6px; right: 6px; background: var(--blue); color: white; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
+        .badge { position: absolute; top: 4px; right: 4px; background: var(--blue); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
 
-        /* --- TABLE STYLES --- */
+        /* TABLE STYLES */
         table { width: 100%; border-collapse: collapse; background: var(--card); margin-top: 10px; }
         th { text-align: left; padding: 12px 16px; font-size: 11px; color: #8E8E93; text-transform: uppercase; border-bottom: 1px solid var(--border); }
         td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 16px; }
         
         .qty-input { width: 35px; border: none; background: rgba(142,142,147,0.2); border-radius: 6px; text-align: center; color: var(--text); font-weight: 700; padding: 6px; font-size: 15px; }
-        .btn-minus { width: 28px; height: 28px; background: var(--red); color: white; border: none; border-radius: 50%; font-weight: bold; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .date-text { font-size: 13px; color: #8E8E93; display: block; }
         
+        .btn-action { width: 30px; height: 30px; border: none; border-radius: 50%; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-minus { background: var(--red); color: white; font-size: 18px; }
+        .btn-check { background: var(--green); color: white; font-size: 16px; }
+        
+        .date-text { font-size: 13px; color: #8E8E93; display: block; }
         .empty-state { text-align: center; padding: 40px; color: #8E8E93; font-style: italic; }
     </style>
 </head>
@@ -117,23 +125,27 @@
                         <span id="badge-fruits" class="badge" style="display:none">0</span>
                     </div>
                     <div class="crisper veg-zone" onclick="openTable('Vegetables', 'veg')">
-                        Vegetables
+                        Veg
                         <span id="badge-veg" class="badge" style="display:none">0</span>
                     </div>
                 </div>
             </div>
             <div class="fridge-door">
                 <div class="door-shelf" onclick="openTable('Shelf 1', 'shelf1')">
-                    Shelf 1<br><span style="font-size:10px; opacity:0.8">Eggs/Top</span>
+                    Shelf 1<br><span style="font-size:9px; opacity:0.8">Eggs</span>
                     <span id="badge-shelf1" class="badge" style="display:none">0</span>
                 </div>
                 <div class="door-shelf" onclick="openTable('Shelf 2', 'shelf2')">
-                    Shelf 2<br><span style="font-size:10px; opacity:0.8">Dairy/Sauce</span>
+                    Shelf 2<br><span style="font-size:9px; opacity:0.8">Yogurt/Sauce</span>
                     <span id="badge-shelf2" class="badge" style="display:none">0</span>
                 </div>
                 <div class="door-shelf" onclick="openTable('Shelf 3', 'shelf3')">
-                    Shelf 3<br><span style="font-size:10px; opacity:0.8">Misc/Bottles</span>
+                    Shelf 3<br><span style="font-size:9px; opacity:0.8">Misc</span>
                     <span id="badge-shelf3" class="badge" style="display:none">0</span>
+                </div>
+                <div class="door-shelf" onclick="openTable('Shelf 4', 'shelf4')">
+                    Shelf 4<br><span style="font-size:9px; opacity:0.8">Bottles</span>
+                    <span id="badge-shelf4" class="badge" style="display:none">0</span>
                 </div>
             </div>
         </div>
@@ -149,10 +161,8 @@
     </div>
 
     <script>
-        // --- DATA STRUCTURE ---
-        // item: { name, qty, since, through, location }
-        // location: 'default' (for non-fridge), 'main', 'fruits', 'veg', 'shelf1', etc.
-        let data = JSON.parse(localStorage.getItem('ifridge_ultimate')) || [
+        // --- DATA ---
+        let data = JSON.parse(localStorage.getItem('ifridge_v4')) || [
             { id: 1, name: "Fridge", items: [] },
             { id: 2, name: "Shopping List", items: [] }
         ];
@@ -161,16 +171,27 @@
         let currentSection = 'default';
 
         function save() { 
-            localStorage.setItem('ifridge_ultimate', JSON.stringify(data)); 
+            localStorage.setItem('ifridge_v4', JSON.stringify(data)); 
             updateFridgeBadges();
         }
 
-        // --- NAVIGATION ---
-        function goHome() {
-            switchView('home-view');
-            renderHome();
+        // --- DRAG AND DROP INIT ---
+        function initSortable() {
+            const list = document.getElementById('space-list');
+            new Sortable(list, {
+                handle: '.drag-handle', // Solo se mueve desde el icono
+                animation: 150,
+                onEnd: function (evt) {
+                    const item = data.splice(evt.oldIndex, 1)[0];
+                    data.splice(evt.newIndex, 0, item);
+                    save();
+                }
+            });
         }
 
+        // --- NAVIGATION ---
+        function goHome() { switchView('home-view'); renderHome(); }
+        
         function goBackFromTable() {
             const space = data.find(s => s.id === currentSpaceId);
             if (space && space.name === "Fridge") {
@@ -186,7 +207,7 @@
             document.getElementById(viewId).classList.add('active');
         }
 
-        // --- HOME LOGIC (SWIPE & LIST) ---
+        // --- HOME RENDER ---
         function renderHome() {
             const list = document.getElementById('space-list');
             list.innerHTML = '';
@@ -207,25 +228,38 @@
                         <div class="action-btn ren-btn" onclick="renameSpace(${s.id})">Rename</div>
                         <div class="action-btn del-btn" onclick="deleteSpace(${s.id})">Delete</div>
                     </div>
-                    <div class="swipe-content" onclick="enterSpace(${s.id})">
-                        <span style="font-size:26px; margin-right:15px">${icon}</span>
-                        <span style="flex-grow:1; font-weight:600; font-size:17px">${s.name}</span>
-                        <span style="color:#8E8E93; font-size:15px">${s.items.length} ›</span>
+                    <div class="swipe-content">
+                        <div style="flex-grow:1; display:flex; align-items:center" onclick="enterSpace(${s.id})">
+                            <span style="font-size:26px; margin-right:15px">${icon}</span>
+                            <div style="flex-grow:1">
+                                <span style="font-weight:600; font-size:17px; display:block">${s.name}</span>
+                                <span style="color:#8E8E93; font-size:14px">${s.items.length} items</span>
+                            </div>
+                        </div>
+                        <div class="drag-handle">≡</div>
                     </div>
                 `;
 
                 // Swipe Logic
                 let startX;
                 const content = container.querySelector('.swipe-content');
-                content.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+                
+                // Exclude drag handle from swipe
+                content.addEventListener('touchstart', e => {
+                    if(!e.target.classList.contains('drag-handle')) startX = e.touches[0].clientX;
+                });
+                
                 content.addEventListener('touchend', e => {
+                    if(!startX) return;
                     let diff = startX - e.changedTouches[0].clientX;
                     if (diff > 50) content.classList.add('swiped');
                     else if (diff < -50) content.classList.remove('swiped');
+                    startX = null;
                 });
 
                 list.appendChild(container);
             });
+            initSortable();
         }
 
         function enterSpace(id) {
@@ -247,28 +281,23 @@
         }
 
         function deleteSpace(id) {
-            if(confirm("Delete this entire space?")) {
+            if(confirm("Delete this space?")) {
                 data = data.filter(s => s.id !== id);
                 save(); renderHome();
             }
         }
-
         function renameSpace(id) {
             const n = prompt("New Name:");
             if(n) { data.find(s => s.id === id).name = n; save(); renderHome(); }
         }
 
-        // --- FRIDGE VISUAL LOGIC ---
+        // --- FRIDGE BADGES ---
         function updateFridgeBadges() {
             const space = data.find(s => s.name === "Fridge");
             if (!space) return;
-            
             const counts = {};
-            space.items.forEach(i => {
-                counts[i.location] = (counts[i.location] || 0) + 1;
-            });
-
-            ['main', 'fruits', 'veg', 'shelf1', 'shelf2', 'shelf3'].forEach(loc => {
+            space.items.forEach(i => counts[i.location] = (counts[i.location] || 0) + 1);
+            ['main', 'fruits', 'veg', 'shelf1', 'shelf2', 'shelf3', 'shelf4'].forEach(loc => {
                 const el = document.getElementById(`badge-${loc}`);
                 if(el) {
                     el.innerText = counts[loc] || 0;
@@ -277,7 +306,7 @@
             });
         }
 
-        // --- TABLE LOGIC (SMART COLUMNS) ---
+        // --- TABLE RENDER ---
         function openTable(title, section) {
             currentSection = section;
             document.getElementById('table-title').innerText = title;
@@ -289,21 +318,20 @@
             const container = document.getElementById('table-container');
             const space = data.find(s => s.id === currentSpaceId);
             
-            // Filter items: If Fridge, filter by section. Else show all.
+            // Filter items
             let items = space.items;
-            if (space.name === "Fridge") {
-                items = space.items.filter(i => i.location === currentSection);
-            }
+            if (space.name === "Fridge") items = space.items.filter(i => i.location === currentSection);
 
             // Determine Columns
             let showSince = true;
             let showThrough = true;
+            const isShoppingList = (space.name === "Shopping List");
 
             if (currentSection === 'fruits' || currentSection === 'veg') showThrough = false;
-            if (currentSection === 'shelf2') showSince = false;
+            if (currentSection === 'shelf2' || isShoppingList) showSince = false;
 
             if (items.length === 0) {
-                container.innerHTML = '<div class="empty-state">No items here yet.<br>Tap + to add.</div>';
+                container.innerHTML = '<div class="empty-state">No items.<br>Tap + to add.</div>';
                 return;
             }
 
@@ -316,19 +344,20 @@
             </tr></thead><tbody>`;
 
             items.forEach(item => {
-                // Find real index in main array to edit/delete
                 const realIndex = space.items.indexOf(item);
                 
+                // Action Button Logic (Check vs Minus)
+                let actionBtn = `<button class="btn-action btn-minus" onclick="minusItem(${realIndex})">−</button>`;
+                if (isShoppingList) {
+                    actionBtn = `<button class="btn-action btn-check" onclick="markAsBought(${realIndex})">✓</button>`;
+                }
+
                 html += `<tr>
                     <td style="font-weight:500">${item.name}</td>
-                    <td style="text-align:center">
-                        <input type="number" class="qty-input" value="${item.qty}" onchange="updateQty(${realIndex}, this.value)">
-                    </td>
+                    <td style="text-align:center"><input type="number" class="qty-input" value="${item.qty}" onchange="updateQty(${realIndex}, this.value)"></td>
                     ${showSince ? `<td><span class="date-text">${item.since || '-'}</span></td>` : ''}
                     ${showThrough ? `<td><span class="date-text">${item.through || '-'}</span></td>` : ''}
-                    <td style="text-align:right">
-                        <button class="btn-minus" onclick="minusItem(${realIndex})">−</button>
-                    </td>
+                    <td style="text-align:right">${actionBtn}</td>
                 </tr>`;
             });
 
@@ -348,22 +377,40 @@
             const space = data.find(s => s.id === currentSpaceId);
             space.items[index].qty--;
             
-            // Stock warning logic
             if (space.items[index].qty <= 2 && space.items[index].qty > 0) {
-                if(confirm(`Low stock (${space.items[index].qty}) on ${space.items[index].name}. Add to Shopping List?`)) {
-                    const list = data.find(s => s.name === "Shopping List");
-                    if(list) list.items.push({ 
-                        name: space.items[index].name, 
-                        qty: 1, 
-                        location: 'default',
-                        since: new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})
-                    });
-                    alert("Added to Shopping List!");
+                if(confirm(`Low stock: ${space.items[index].name}. Add to Shopping List?`)) {
+                    addToShoppingList(space.items[index].name);
                 }
             }
-
             if (space.items[index].qty <= 0) space.items.splice(index, 1);
             save(); renderTableItems();
+        }
+
+        function markAsBought(index) {
+            const space = data.find(s => s.id === currentSpaceId);
+            const item = space.items[index];
+            
+            if(confirm(`Bought ${item.name}? Move to Fridge (Main)?`)) {
+                // Add to Fridge Main
+                const fridge = data.find(s => s.name === "Fridge");
+                if(fridge) {
+                    fridge.items.push({
+                        name: item.name, qty: item.qty, 
+                        location: 'main', 
+                        since: new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'}),
+                        through: ''
+                    });
+                    alert(`Moved ${item.name} to Fridge.`);
+                }
+            }
+            // Remove from Shopping List
+            space.items.splice(index, 1);
+            save(); renderTableItems();
+        }
+
+        function addToShoppingList(name) {
+            const list = data.find(s => s.name === "Shopping List");
+            if(list) list.items.push({ name: name, qty: 1, location: 'default' });
         }
 
         function addProduct() {
@@ -375,30 +422,26 @@
             let through = "";
             const today = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'});
 
-            // Smart Prompts
-            if (currentSection === 'shelf2') {
-                // Only Expiry
-                through = prompt("Expiry Date (DD/MM):", "");
-            } else if (currentSection === 'fruits' || currentSection === 'veg') {
-                // Only Since
-                since = prompt("Date Added (DD/MM):", today);
-            } else {
-                // Both
-                since = prompt("Date Added (DD/MM):", today);
-                through = prompt("Expiry Date (DD/MM):", "");
+            const space = data.find(s => s.id === currentSpaceId);
+            const isShoppingList = (space.name === "Shopping List");
+
+            if (!isShoppingList) {
+                if (currentSection === 'shelf2') {
+                    through = prompt("Expiry Date (DD/MM):", "");
+                } else if (currentSection === 'fruits' || currentSection === 'veg') {
+                    since = prompt("Date Added (DD/MM):", today);
+                } else {
+                    since = prompt("Date Added (DD/MM):", today);
+                    through = prompt("Expiry Date (DD/MM):", "");
+                }
             }
 
-            const space = data.find(s => s.id === currentSpaceId);
-            space.items.push({
-                name, qty, since, through,
-                location: currentSection // 'main', 'shelf1', etc.
-            });
+            space.items.push({ name, qty, since, through, location: currentSection });
             save(); renderTableItems();
         }
 
-        // Start App
+        // Init
         renderHome();
-
     </script>
 </body>
 </html>
